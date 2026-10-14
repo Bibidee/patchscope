@@ -48,6 +48,10 @@
           "string"
         ],
         [
+          "ecosystem",
+          "string"
+        ],
+        [
           "package_name",
           "string"
         ],

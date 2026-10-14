@@ -1,9 +1,22 @@
 # Deployment status
 
-Patchscope v0.1.0 is **undeployed**. No contract address, transaction, live review, or source-parity claim is asserted.
+Patchscope v0.2.0 is **undeployed**. There is no current address, deployment transaction, live review, or deployed-source parity claim. The repository must not be presented as a deployed release.
 
-## Release gate
+## Pre-deployment verification
 
-Before any deployment, freeze the contract source and record its raw SHA-256. Run `python -m pytest tests -q` and `python scripts/preflight.py`. Require all Direct Mode tests, GenVM lint, and ABI/schema generation to pass. Deploy only the exact frozen source to the explicitly selected StudioNet (chain ID 61999) through an authorized signer. Verify finalized execution, call `get_info()`, retrieve deployed source through a supported raw-source method, and compare it byte-for-byte before documenting an address as current.
+Use the pinned Python dependencies in `requirements.txt`. Run:
 
-Live lifecycle evidence is still outstanding and must not be implied by this local release gate.
+```text
+python -m pytest tests -q
+python scripts/preflight.py
+genvm-lint check contracts/patchscope.py --json
+genvm-lint schema contracts/patchscope.py --output artifacts/patchscope.abi.json
+```
+
+The preflight is fail-fast: exactly one deployable contract source, Python compilation, the full test suite, GenVM lint, and schema generation in a temporary location followed by byte-for-byte comparison with the committed ABI artifact. A successful local gate is not deployment evidence.
+
+## Deployment evidence required
+
+Before deployment, freeze the source and record its raw SHA-256 and commit. Deploy only that exact source to GenLayer StudioNet (chain ID 61999) through a project-authorized signer. Verify a finalized successful deployment, record `get_info()`, retrieve the deployed source using a supported raw-source interface, and compare the bytes exactly. Then perform and record proposal, review, and terminal-state reads. A deployment address must not be called current until these checks have actually succeeded.
+
+No signer was authorized for this release pass. No transaction was submitted and no live RPC state is claimed.
