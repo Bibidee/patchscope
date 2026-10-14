@@ -40,4 +40,3 @@ def pytest_sessionfinish(session, exitstatus):
             _original_unlink(path)
         except FileNotFoundError:
             pass
-
