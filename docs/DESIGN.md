@@ -29,4 +29,3 @@ Cancellation is proposer-only and permitted only before a terminal review result
 ## Non-goals and limitations
 
 Patchscope does not discover dependencies, prove publisher identity, establish advisory authenticity, execute remediation, or guarantee that a package is safe. HTTPS validation cannot eliminate DNS rebinding or redirect risks, and remote sources or model execution may be unavailable. No escrow or funds are held.
-
