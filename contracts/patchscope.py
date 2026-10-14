@@ -450,4 +450,3 @@ class Patchscope(gl.Contract):
             "max_reviews": MAX_REVIEWS,
             "statuses": [PENDING, RETRYABLE, INVALID_ARTIFACT, INCONCLUSIVE, AFFECTED, NOT_AFFECTED, CANCELLED],
         }
-
