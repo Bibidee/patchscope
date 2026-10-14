@@ -24,6 +24,7 @@ def advisory_bytes(**overrides):
         "ecosystem": "npm",
         "package_name": "example-lib",
         "affected_versions": ">=1.0.0 <1.5.0",
+        "fixed_versions": ["1.5.0"],
         "details": "Versions below 1.5.0 are affected. Version 1.5.0 contains the fix.",
         "publisher": "Example Security Team (caller-declared)",
         "reference_url": REFERENCE_URL,
@@ -128,8 +129,10 @@ def test_bad_case_id_rejected(direct_vm, direct_deploy, direct_alice, direct_bob
 @pytest.mark.parametrize("field,value,message", [
     ("package_name", "", "Invalid canonical package name"),
     ("package_name", "Example-Lib", "Invalid canonical package name"),
+    ("package_name", "example-lib\n", "Invalid canonical package name"),
     ("ecosystem", "unknown", "Unsupported package ecosystem"),
     ("package_version", "  ", "Invalid package version"),
+    ("package_version", "1.4.2\n", "Invalid package version"),
     ("advisory_id", "", "Invalid advisory ID"),
     ("summary", "  \n ", "Invalid summary"),
     ("inventory_hash", "0x1234", "Invalid SHA-256"),
@@ -223,7 +226,8 @@ def test_real_validator_rejects_leader_approval_validator_inconclusive(
 ):
     _capture_review_validator(direct_vm, direct_deploy, direct_alice, direct_bob)
     mocks(direct_vm, result=observation(confidence=79))
-    leader_result = {"kind": "result", "identity_status": "verified", "observation": observation()}
+    leader_result = {"kind": "result", "identity_status": "verified", "fixed_version_match": False,
+                     "observation": observation()}
     assert direct_vm.run_validator(leader_result=leader_result) is False
 
 
@@ -232,7 +236,8 @@ def test_real_validator_rejects_leader_inconclusive_validator_approval(
 ):
     _capture_review_validator(direct_vm, direct_deploy, direct_alice, direct_bob)
     mocks(direct_vm, result=observation())
-    leader_result = {"kind": "result", "identity_status": "verified", "observation": observation(confidence=79)}
+    leader_result = {"kind": "result", "identity_status": "verified", "fixed_version_match": False,
+                     "observation": observation(confidence=79)}
     assert direct_vm.run_validator(leader_result=leader_result) is False
 
 
@@ -241,13 +246,14 @@ def test_real_validator_accepts_approval_with_different_rationale(
 ):
     _capture_review_validator(direct_vm, direct_deploy, direct_alice, direct_bob)
     mocks(direct_vm, result=observation(rationale="Independent explanation, same scope and decision."))
-    leader_result = {"kind": "result", "identity_status": "verified", "observation": observation()}
+    leader_result = {"kind": "result", "identity_status": "verified", "fixed_version_match": False,
+                     "observation": observation()}
     assert direct_vm.run_validator(leader_result=leader_result) is True
 
 
 @pytest.mark.parametrize("result,expected", [
     (observation(confidence=79), "inconclusive"),
-    (observation(affected_version="no"), "not_affected"),
+    (observation(affected_version="no"), "inconclusive"),
     (observation(package_match="no", affected_version="unclear"), "inconclusive"),
     (observation(package_match="no", affected_version="no"), "inconclusive"),
     (observation(package_match="unclear"), "inconclusive"),
@@ -334,8 +340,10 @@ def test_validator_equivalence_materiality(direct_vm, direct_deploy, direct_alic
     import sys
 
     module = sys.modules[contract.__class__.__module__]
-    assert module.equivalent({"kind": "result", "identity_status": "verified", "observation": left},
-                             {"kind": "result", "identity_status": "verified", "observation": right}) is expected
+    assert module.equivalent({"kind": "result", "identity_status": "verified", "fixed_version_match": False,
+                              "observation": left},
+                             {"kind": "result", "identity_status": "verified", "fixed_version_match": False,
+                              "observation": right}) is expected
 
 
 @pytest.mark.parametrize("packages,version,identity_status", [
@@ -358,6 +366,10 @@ def test_inventory_identity_is_exact_and_deterministic(
     expected = "inconclusive" if identity_status != "verified" else "affected"
     assert row["status"] == expected
     assert row["identity_status"] == identity_status
+    if identity_status in ("package_absent", "ecosystem_mismatch", "version_mismatch"):
+        assert row["package_match"] == "no"
+    elif identity_status == "ambiguous_inventory":
+        assert row["package_match"] == "unclear"
     assert row["confidence"] == (92 if identity_status == "verified" else 0)
 
 
@@ -375,6 +387,9 @@ def test_advisory_must_match_declared_identity(direct_vm, direct_deploy, direct_
     row = contract.get_case("PS-001", direct_alice)
     assert row["status"] == "inconclusive"
     assert row["identity_status"] == "advisory_mismatch"
+    assert row["package_match"] == "yes"
+    assert row["evidence_quality"] == "no"
+    assert row["contradiction"] == "yes"
     assert row["confidence"] == 0
 
 
@@ -383,6 +398,9 @@ def test_advisory_must_match_declared_identity(direct_vm, direct_deploy, direct_
     b'{"format":"patchscope-inventory-v1","format":"patchscope-inventory-v1","packages":[]}',
     inventory_bytes([{"ecosystem": "npm", "name": "example-lib", "version": "1.4.2"}] * 2),
     inventory_bytes([{"ecosystem": "npm", "name": "Example-Lib", "version": "1.4.2"}]),
+    inventory_bytes([{"ecosystem": "npm", "name": "example-lib\n", "version": "1.4.2"}]),
+    inventory_bytes([{"ecosystem": "npm", "name": "example-lib", "version": "1.4.2\n"}]),
+    inventory_bytes([{"ecosystem": "npm", "name": "x" * 161, "version": "1.4.2"}]),
     inventory_bytes([{"ecosystem": "npm", "name": "example-lib"}]),
     inventory_bytes([{"ecosystem": "npm", "name": "example-lib", "version": ""}]),
     inventory_bytes([{"ecosystem": "npm", "name": "example-lib", "version": "1.4.2", "alias": "other"}]),
@@ -403,6 +421,10 @@ def test_malformed_inventory_is_invalid_and_never_assessed(direct_vm, direct_dep
     advisory_bytes(details=""),
     advisory_bytes(publisher=""),
     advisory_bytes(reference_url="http://security.example.net/advisory"),
+    advisory_bytes(package_name="example-lib\n"),
+    advisory_bytes(fixed_versions="1.5.0"),
+    advisory_bytes(fixed_versions=["1.5.0\n"]),
+    advisory_bytes(fixed_versions=["1.5.0", "1.5.0"]),
     advisory_bytes(extra="unexpected"),
 ])
 def test_malformed_advisory_is_invalid(direct_vm, direct_deploy, direct_alice, direct_bob, advisory):
@@ -416,7 +438,7 @@ def test_malformed_advisory_is_invalid(direct_vm, direct_deploy, direct_alice, d
 @pytest.mark.parametrize("result,expected", [
     (observation(package_match="no", affected_version="yes"), "inconclusive"),
     (observation(package_match="no", affected_version="no"), "inconclusive"),
-    (observation(package_match="yes", affected_version="no"), "not_affected"),
+    (observation(package_match="yes", affected_version="no"), "inconclusive"),
     (observation(package_match="yes", affected_version="yes"), "affected"),
     (observation(package_match="yes", affected_version="yes", evidence_quality="unclear"), "inconclusive"),
     (observation(package_match="yes", affected_version="yes", contradiction="yes"), "inconclusive"),
@@ -428,6 +450,60 @@ def test_classification_requires_verified_exact_identity_and_explicit_evidence(
     contract = deploy(direct_vm, direct_deploy, direct_alice)
     propose(contract, direct_bob)
     mocks(direct_vm, result=result)
+    contract.review("PS-001", direct_alice)
+    assert contract.get_case("PS-001", direct_alice)["status"] == expected
+
+
+def test_not_affected_requires_exact_committed_fixed_version(direct_vm, direct_deploy, direct_alice, direct_bob):
+    contract = deploy(direct_vm, direct_deploy, direct_alice)
+    inventory = inventory_bytes([{"ecosystem": "npm", "name": "example-lib", "version": "1.5.0"}])
+    propose(contract, direct_bob, inventory=inventory, package_version="1.5.0")
+    mocks(direct_vm, inventory=inventory, result=observation(affected_version="no"))
+    contract.review("PS-001", direct_alice)
+    row = contract.get_case("PS-001", direct_alice)
+    assert row["status"] == "not_affected"
+    assert row["fixed_version_match"] == "yes"
+
+
+def test_model_cannot_claim_not_affected_without_exact_fixed_version(direct_vm, direct_deploy, direct_alice, direct_bob):
+    contract = deploy(direct_vm, direct_deploy, direct_alice)
+    propose(contract, direct_bob, advisory=advisory_bytes(fixed_versions=[]))
+    mocks(direct_vm, advisory=advisory_bytes(fixed_versions=[]), result=observation(affected_version="no"))
+    contract.review("PS-001", direct_alice)
+    row = contract.get_case("PS-001", direct_alice)
+    assert row["status"] == "inconclusive"
+    assert row["fixed_version_match"] == "no"
+
+
+def test_fixed_version_conflict_never_approves_affected(direct_vm, direct_deploy, direct_alice, direct_bob):
+    contract = deploy(direct_vm, direct_deploy, direct_alice)
+    inventory = inventory_bytes([{"ecosystem": "npm", "name": "example-lib", "version": "1.5.0"}])
+    advisory = advisory_bytes(affected_versions="1.5.0", fixed_versions=["1.5.0"])
+    propose(contract, direct_bob, inventory=inventory, advisory=advisory, package_version="1.5.0")
+    mocks(direct_vm, inventory=inventory, advisory=advisory, result=observation(affected_version="yes"))
+    contract.review("PS-001", direct_alice)
+    row = contract.get_case("PS-001", direct_alice)
+    assert row["status"] == "inconclusive"
+    assert row["fixed_version_match"] == "yes"
+
+
+@pytest.mark.parametrize("version,affected_versions,fixed_versions,result,expected", [
+    ("1.0.0", ">=1.0.0 <1.5.0", [], observation(affected_version="yes"), "affected"),
+    ("1.5.0", ">=1.0.0 <1.5.0", ["1.5.0"], observation(affected_version="no"), "not_affected"),
+    ("1.5.0-rc.1", ">=1.0.0 <1.5.0", ["1.5.0"], observation(affected_version="no"), "inconclusive"),
+    ("1.4.2", "not-a-supported-range", [], observation(affected_version="no"), "inconclusive"),
+    ("1.4.2", ">=1.0.0 <2.0.0", ["1.4.2"],
+     observation(affected_version="yes", contradiction="yes"), "inconclusive"),
+])
+def test_version_boundaries_and_unsupported_scope_fail_conservatively(
+    direct_vm, direct_deploy, direct_alice, direct_bob, version, affected_versions,
+    fixed_versions, result, expected,
+):
+    contract = deploy(direct_vm, direct_deploy, direct_alice)
+    inventory = inventory_bytes([{"ecosystem": "npm", "name": "example-lib", "version": version}])
+    advisory = advisory_bytes(affected_versions=affected_versions, fixed_versions=fixed_versions)
+    propose(contract, direct_bob, inventory=inventory, advisory=advisory, package_version=version)
+    mocks(direct_vm, inventory=inventory, advisory=advisory, result=result)
     contract.review("PS-001", direct_alice)
     assert contract.get_case("PS-001", direct_alice)["status"] == expected
 

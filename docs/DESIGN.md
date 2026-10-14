@@ -14,19 +14,21 @@ The inventory format is exactly:
 
 The exact ecosystem/name/version must occur uniquely before semantic review. Absence, ecosystem/version mismatch, or ambiguity yields `inconclusive`; malformed inventory yields `invalid_artifact`.
 
-The advisory format has exactly these fields: `format`, `advisory_id`, `ecosystem`, `package_name`, `affected_versions`, `details`, `publisher`, and `reference_url`. Its format, advisory ID, ecosystem, and package name are checked against the proposal before LLM review. `publisher` and `reference_url` are caller-declared fields, not authenticated provenance. Patchscope does not implement package-manager-specific version-range parsers; validators interpret the bounded scope text.
+The advisory format has exactly these fields: `format`, `advisory_id`, `ecosystem`, `package_name`, `affected_versions`, `fixed_versions`, `details`, `publisher`, and `reference_url`. Its format, advisory ID, ecosystem, and package name are checked against the proposal before LLM review. `fixed_versions` is a bounded list of exact canonical version strings, not a range expression. `publisher` and `reference_url` are caller-declared fields, not authenticated provenance. Patchscope does not implement package-manager-specific version-range parsers; validators interpret the bounded affected-scope text.
 
 ## Semantic decision and consensus
 
 The model must return exactly `package_match`, `affected_version`, `evidence_quality`, `contradiction`, `confidence`, and `rationale`, with bounded enum values, integer confidence 0–100, and nonempty rationale no longer than 400 characters. The contract derives state; rationale is never authorization logic.
 
-- `affected` requires verified artifact identity, `package_match=yes`, `affected_version=yes`, `evidence_quality=yes`, `contradiction=no`, and confidence >= 80.
-- `not_affected` requires the same verified identity and quality conditions, with `affected_version=no` and `package_match=yes`.
+- `affected` requires verified artifact identity, `package_match=yes`, `affected_version=yes`, `evidence_quality=yes`, `contradiction=no`, confidence >= 80, and no exact installed-version match in `fixed_versions`.
+- `not_affected` requires the same verified identity and quality conditions, with `affected_version=no`, `package_match=yes`, and an exact match between the installed version and a committed `fixed_versions` entry. This intentionally sacrifices some negative classifications rather than treating incomplete or unsupported range syntax as proof of exclusion.
 - Every other valid semantic observation is `inconclusive`.
 - Temporary fetch/provider errors and malformed model output are `retryable`; the fourth committed retryable review becomes terminal `review_exhausted`.
 - Invalid artifact or schema conditions become `invalid_artifact`.
 
-Leader and validators independently fetch and assess. For an authorization-bearing result (`affected` or `not_affected`), they must agree exactly on all four material semantic fields and be within 20 confidence points. Rationale may differ. For `inconclusive`, a confidence gap above 20 fails equivalence; otherwise differing semantic subfields are accepted because the outcome grants no authorization. Bounded retryable/invalid-artifact codes and identity outcomes must match exactly. Failed consensus/reverted transactions do not persist a review count.
+Leader and validators independently fetch and assess. For an authorization-bearing result (`affected` or `not_affected`), they must agree exactly on all four material semantic fields, the deterministic exact-fixed-version match, and be within 20 confidence points. Rationale may differ. For `inconclusive`, a confidence gap above 20 fails equivalence; otherwise differing semantic subfields are accepted because the outcome grants no authorization. Bounded retryable/invalid-artifact codes and identity outcomes must match exactly. Failed consensus/reverted transactions do not persist a review count.
+
+The state getters preserve the reason for a non-authorizing identity result. Missing package, ecosystem mismatch, and version mismatch expose `package_match=no`; ambiguous inventory exposes `package_match=unclear`; a proposal/advisory identity mismatch exposes `identity_status=advisory_mismatch`, `evidence_quality=no`, and `contradiction=yes`.
 
 ## State and access
 
