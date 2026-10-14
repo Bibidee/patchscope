@@ -46,7 +46,36 @@ A single centralized verifier could selectively interpret one copy of an invento
 - Only committed review results increment the review counter. A transaction that fails consensus and reverts does not persist an attempt count; callers can retry such failed transactions at their own transaction cost.
 - Cases are permanent records. The 64-case proposer cap is an intentional storage-growth limit and is not freed by cancellation or terminal review.
 - Confidence is a model-supplied classification input, not a calibrated probability. Rationale is explanatory only.
-- This standalone contract has no frontend, escrow, payouts, or deployment evidence at this release checkpoint.
+- This standalone contract has no frontend, escrow, or payouts. Verified StudioNet deployment and live-case evidence are recorded below.
+
+## v0.2.0 StudioNet deployment and live evidence
+
+The frozen v0.2.0 contract is deployed on GenLayer StudioNet (chain ID 61999).
+
+- Contract: [0xcB716aA160F743AEeaAB62d05743b7557fCAADdc](https://explorer-studio.genlayer.com/address/0xcB716aA160F743AEeaAB62d05743b7557fCAADdc)
+- Deployment transaction: [0xbc22d7b44a2586fbb397ea578c70e17bbdc96d157463a9f1b59c91462905918b](https://explorer-studio.genlayer.com/tx/0xbc22d7b44a2586fbb397ea578c70e17bbdc96d157463a9f1b59c91462905918b)
+- Finality: FINALIZED / MAJORITY_AGREE; deployment GenVM execution succeeded.
+- Source SHA-256: `75a8203918d522a7b246950c95784bb70453009e87d935a4f4dc192635847106` (32,412 bytes). Deployed code retrieved with `gen_getContractCode`, decoded, and compared byte-for-byte with the frozen repository source: VERIFIED.
+- `get_info()`: Patchscope v0.2.0; `min_confidence=80`; `max_artifact_bytes=16000`; `max_reviews=4`; `max_cases_per_proposer=64`; `not_affected_requires_exact_fixed_version=true`.
+- Local release gate: 111 tests passed, none skipped or failed; preflight, GenVM lint, and ABI/schema checks passed. GitHub Actions passed for the source/fixture baseline (runs [38549819757](https://github.com/Bibidee/patchscope/actions/runs/38549819757) and [38556337959](https://github.com/Bibidee/patchscope/actions/runs/38556337959)).
+
+### Live case results
+
+All writes were sent by the explicitly authorized `polyglot-deployer` account (`0x527da5f7022f14f7105e5f06cec1a8eff53556b5`); for this single-account demonstration it was both proposer and designated consumer. Each listed successful write finalized with MAJORITY_AGREE and successful leader execution.
+
+| Case | Proposal transaction | Review / cancel transaction | Canonical result |
+|---|---|---|---|
+| `PSM-LIVE-AFFECTED-20261014-02` | [0xbce20c5b41320beec697430897feda7b0b4ccf1c8f7592e1067cbbe0aab5df5d](https://explorer-studio.genlayer.com/tx/0xbce20c5b41320beec697430897feda7b0b4ccf1c8f7592e1067cbbe0aab5df5d) | [0xb8874f4909aeba0987d7deee4d76398c64d1e999a890c4e0720d81be96392fb8](https://explorer-studio.genlayer.com/tx/0xb8874f4909aeba0987d7deee4d76398c64d1e999a890c4e0720d81be96392fb8) | `affected`, confidence 95; verified package identity, exact affected-version evidence, no contradiction. |
+| `PSM-LIVE-FIXED-20261014-01` | [0x82637d1af53cf1c2d4ea74e729ee7b878694370125869a10656823ef2e30224d](https://explorer-studio.genlayer.com/tx/0x82637d1af53cf1c2d4ea74e729ee7b878694370125869a10656823ef2e30224d) | [0x1039149b3ef2e4fea43bcbd9cc82119ec9b088b2882f64a6b28990a1112152a7](https://explorer-studio.genlayer.com/tx/0x1039149b3ef2e4fea43bcbd9cc82119ec9b088b2882f64a6b28990a1112152a7) | `not_affected`, confidence 100; exact fixed version `4.18.0`. |
+| `PSM-LIVE-ADVISORY-MISMATCH-20261014-01` | [0x3d2fbeefd60ccb2aa4fec5a560cb8530a3dec89850e35a5008351443d48ed9b6](https://explorer-studio.genlayer.com/tx/0x3d2fbeefd60ccb2aa4fec5a560cb8530a3dec89850e35a5008351443d48ed9b6) | [0xada38cc06018470a95498e05b21b78bc3c5d401a3e4f9e0f837d73a7e00d1d84](https://explorer-studio.genlayer.com/tx/0xada38cc06018470a95498e05b21b78bc3c5d401a3e4f9e0f837d73a7e00d1d84) | `inconclusive`; `identity_status=advisory_mismatch`. |
+| `PSM-LIVE-HASH-MISMATCH-20261014-01` | [0x74d6b0b32d894cb23e5c1ae92457d13d9768eca113f0a9d0da7f5254f453ec28](https://explorer-studio.genlayer.com/tx/0x74d6b0b32d894cb23e5c1ae92457d13d9768eca113f0a9d0da7f5254f453ec28) | [0x44121d6324d8f84813deb64b459379da9d912934bd354f543773b8f18d042372](https://explorer-studio.genlayer.com/tx/0x44121d6324d8f84813deb64b459379da9d912934bd354f543773b8f18d042372) | `invalid_artifact`; rationale `hash_mismatch`. |
+| `PSM-LIVE-CANCEL-20261014-01` | [0x222b5068a1f591f24cf494ee2470801d3ee70aa7a08eb8a0bf66fb4ad4fe6fff](https://explorer-studio.genlayer.com/tx/0x222b5068a1f591f24cf494ee2470801d3ee70aa7a08eb8a0bf66fb4ad4fe6fff) | [0xf6014b3d4a1be70552586a597cd257b12dadebf467f336c81cec357a21119b85](https://explorer-studio.genlayer.com/tx/0xf6014b3d4a1be70552586a597cd257b12dadebf467f336c81cec357a21119b85) | `cancelled` from `pending`. |
+
+The immutable demonstration files are under [docs/live-fixtures/v0.2.0](docs/live-fixtures/v0.2.0). Their exact bytes are SHA-256 committed and tested on-chain: affected inventory `12488d08b4a62391fc8bf1ebc4bc0ae275661b5f75917da381d2a172bafb93ad`; fixed inventory `2fc980c6404ddb919019fc48a17ddca6388c885f8c652668f9e6dd84159e688a`; advisory `a9443a5fb5055bf716f1d8113940aae6042f6145c927c72b22b5234dea67d1aa`. These are controlled test fixtures copied from the cited advisory, not authenticated package inventories or publisher signatures; inventory provenance remains caller-declared.
+
+A first CLI proposal-format trial, [0xab13670737d80187c6709680e869555262c33e320f64fc46ec60638738c22ffb](https://explorer-studio.genlayer.com/tx/0xab13670737d80187c6709680e869555262c33e320f64fc46ec60638738c22ffb), finalized with a missing-positional-arguments GenVM error because PowerShell grouped the argument array. A canonical read confirmed no case was created. The subsequent successful tests used GenLayerJS with separate typed arguments; this was a CLI invocation issue, not a contract change.
+
+A second signer was not used, so live unauthorized-caller rejection was not attempted. Access-control behavior remains covered by the Direct Mode suite.
 
 ## Development and verification
 
