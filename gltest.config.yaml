@@ -6,4 +6,3 @@ networks:
 paths:
   contracts: "contracts"
   artifacts: "artifacts"
-
