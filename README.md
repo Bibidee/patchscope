@@ -30,4 +30,3 @@ Only the proposer or designated consumer may request review. The proposer can ca
 Python 3.12 is used by CI. Install pinned requirements, run `python -m pytest tests -q`, then `python scripts/preflight.py`. Preflight requires exactly one deployable contract source and performs syntax checks, genuine GenLayer Direct Mode tests, GenVM lint, and ABI/schema generation.
 
 The contract currently has no deployment evidence and is intentionally marked **undeployed**. Do not treat local tests as proof of StudioNet behavior.
-
