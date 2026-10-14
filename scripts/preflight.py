@@ -44,4 +44,3 @@ parsed = json.loads(schema.read_text(encoding="utf-8"))
 if not isinstance(parsed, dict) or not parsed:
     raise SystemExit("ABI/schema output was empty or invalid")
 print("Patchscope preflight PASS: one deployable source, syntax, tests, GenVM lint, ABI/schema")
-
