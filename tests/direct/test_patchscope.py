@@ -301,4 +301,3 @@ def test_validator_equivalence_materiality(direct_vm, direct_deploy, direct_alic
     module = sys.modules[contract.__class__.__module__]
     assert module.equivalent({"kind": "result", "observation": left},
                              {"kind": "result", "observation": right}) is expected
-
