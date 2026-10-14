@@ -1,0 +1,109 @@
+{
+  "ctor": {
+    "params": [],
+    "kwparams": {}
+  },
+  "methods": {
+    "cancel": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ],
+        [
+          "proposer",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "get_case": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ],
+        [
+          "proposer",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_info": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "propose": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ],
+        [
+          "package_name",
+          "string"
+        ],
+        [
+          "package_version",
+          "string"
+        ],
+        [
+          "inventory_url",
+          "string"
+        ],
+        [
+          "inventory_hash",
+          "string"
+        ],
+        [
+          "advisory_id",
+          "string"
+        ],
+        [
+          "advisory_url",
+          "string"
+        ],
+        [
+          "advisory_hash",
+          "string"
+        ],
+        [
+          "summary",
+          "string"
+        ],
+        [
+          "consumer",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "review": {
+      "params": [
+        [
+          "case_id",
+          "string"
+        ],
+        [
+          "proposer",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    }
+  }
+}
