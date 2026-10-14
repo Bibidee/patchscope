@@ -13,7 +13,7 @@ genvm-lint check contracts/patchscope.py --json
 genvm-lint schema contracts/patchscope.py --output artifacts/patchscope.abi.json
 ```
 
-The preflight is fail-fast: exactly one deployable contract source, Python compilation, the full test suite, GenVM lint, and schema generation in a temporary location followed by byte-for-byte comparison with the committed ABI artifact. A successful local gate is not deployment evidence.
+The preflight is fail-fast: exactly one deployable contract source, Python compilation, the full test suite, GenVM lint, and schema generation in a temporary location followed by JSON-byte comparison with platform-specific CRLF/LF line endings normalized against the committed ABI artifact. A successful local gate is not deployment evidence.
 
 ## Deployment evidence required
 

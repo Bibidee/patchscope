@@ -50,8 +50,11 @@ schema = ROOT / "artifacts" / "patchscope.abi.json"
 with tempfile.TemporaryDirectory(prefix="patchscope-abi-", dir=ROOT) as temporary_directory:
     generated_schema = Path(temporary_directory) / "patchscope.abi.json"
     run([lint, "schema", str(EXPECTED[0]), "--output", str(generated_schema)])
-    generated_bytes = generated_schema.read_bytes()
-    committed_bytes = schema.read_bytes() if schema.exists() else b""
+    # Python's Path.write_text in genvm-linter emits native line endings.
+    # Canonicalize CRLF/LF before comparing so Windows and Linux validate the
+    # same schema content without treating platform newline style as ABI.
+    generated_bytes = generated_schema.read_bytes().replace(b"\r\n", b"\n")
+    committed_bytes = schema.read_bytes().replace(b"\r\n", b"\n") if schema.exists() else b""
     if generated_bytes != committed_bytes:
         raise SystemExit("Generated ABI/schema differs from committed artifacts/patchscope.abi.json")
 parsed = json.loads(committed_bytes.decode("utf-8"))

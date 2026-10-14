@@ -50,6 +50,6 @@ A single centralized verifier could selectively interpret one copy of an invento
 
 ## Development and verification
 
-Python 3.12 and the pinned dependencies in `requirements.txt` are used for CI. Run `python -m pytest tests -q` and `python scripts/preflight.py`. Preflight requires exactly one deployable source, runs syntax compilation and Direct Mode tests, runs GenVM lint and schema generation into a temporary file, and fails unless the generated ABI bytes match the committed artifact.
+Python 3.12 and the pinned dependencies in `requirements.txt` are used for CI. Run `python -m pytest tests -q` and `python scripts/preflight.py`. Preflight requires exactly one deployable source, runs syntax compilation and Direct Mode tests, runs GenVM lint and schema generation into a temporary file, and fails unless generated and committed ABI JSON match after normalizing platform-specific CRLF/LF line endings.
 
 Deployment status is maintained in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Security findings and residual risks are in [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md).
