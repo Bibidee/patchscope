@@ -5,4 +5,4 @@ networks:
 
 paths:
   contracts: "contracts"
-  artifacts: "artifacts"
+  artifacts: ".gltest-artifacts"
